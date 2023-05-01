@@ -48,8 +48,7 @@ def detect_motion(video_file, threshold=30, min_duration=10):
 
 def verbose_progress(current, total):
     progress = (current / total) * 100
-    print(f"Progress: {progress:.2f}%"
-
+    print(f"Progress: {progress:.2f}%")
 
 
 def process_videos(folder):
@@ -57,8 +56,7 @@ def process_videos(folder):
     video_files = [v for v in Path(folder).iterdir() if v.suffix.lower() in video_extensions]
     total_files = len(video_files)
 
-
-      for index, video_file in enumerate(video_files, start=1):
+    for index, video_file in enumerate(video_files, start=1):
         motion_timestamps = detect_motion(str(video_file))
         if len(motion_timestamps) > 0:
             output_file = video_file.stem + "_motion" + video_file.suffix
