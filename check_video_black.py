@@ -70,7 +70,8 @@ def process_directory(directory_path, delete_empty=False, sample_rate=0.1, thres
                     continue
                 
                 print(f"Checking video: {video_path}")
-                if check_video_black(video_path, sample_rate=sample_rate, threshold=threshold):
+                is_empty = check_video_black(video_path, sample_rate=sample_rate, threshold=threshold)
+                if is_empty:
                     print(f"The video {video_path} is empty.")
                     log["processed_files"].append(video_path)
                     if delete_empty:
@@ -80,6 +81,7 @@ def process_directory(directory_path, delete_empty=False, sample_rate=0.1, thres
                     else:
                         log["not_deleted"].append(video_path)
                 else:
+                    print(f"The video {video_path} has content.")
                     log["not_deleted"].append(video_path)
                 save_progress(log)
 
