@@ -87,7 +87,7 @@ def process_directory(directory_path, delete_empty=False, sample_rate=0.1, thres
 
 def main():
     parser = argparse.ArgumentParser(description="Check if CCTV videos in a directory are empty.")
-    parser.add_argument('-f', '--file', type=str, required=True, help='Path to the directory containing CCTV video files')
+    parser.add_argument('-f', '--folder', type=str, required=True, help='Path to the directory containing CCTV video files')
     parser.add_argument('-d', '--delete', action='store_true', help='Delete empty video files after evaluation')
     parser.add_argument('-s', '--sample_rate', type=float, default=0.1, help='Sampling rate for checking frames (default: 0.1)')
     parser.add_argument('-t', '--threshold', type=float, default=0.99, help='Threshold for determining if a video is empty (default: 0.99)')
