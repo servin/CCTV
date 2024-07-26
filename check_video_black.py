@@ -14,7 +14,7 @@ def is_frame_mostly_black(frame, threshold=0.99):
     black_ratio = (total_pixels - non_black_pixels) / total_pixels
     return black_ratio >= threshold
 
-def check_video_black(video_path, sample_rate=0.1, threshold=0.99):
+def check_video_black(video_path, initial_sample_rate=0.1, threshold=0.99):
     cap = cv2.VideoCapture(video_path)
     
     if not cap.isOpened():
@@ -22,10 +22,12 @@ def check_video_black(video_path, sample_rate=0.1, threshold=0.99):
         return False
     
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    sample_rate = initial_sample_rate
     sample_interval = int(1 / sample_rate)
     frame_count = 0
     black_frame_count = 0
-    
+    adaptive_increment = 2
+
     with tqdm(total=total_frames, desc=f"Processing {video_path}", unit="frame") as pbar:
         for i in range(0, total_frames, sample_interval):
             cap.set(cv2.CAP_PROP_POS_FRAMES, i)
@@ -37,6 +39,10 @@ def check_video_black(video_path, sample_rate=0.1, threshold=0.99):
             
             if is_frame_mostly_black(frame, threshold=threshold):
                 black_frame_count += 1
+                if black_frame_count == frame_count:
+                    sample_interval *= adaptive_increment
+            else:
+                sample_interval = int(1 / initial_sample_rate)  # Reset to initial sample rate if a non-black frame is found
             
             pbar.update(sample_interval)
 
@@ -70,7 +76,7 @@ def process_directory(directory_path, delete_empty=False, sample_rate=0.1, thres
                     continue
                 
                 print(f"Checking video: {video_path}")
-                is_empty = check_video_black(video_path, sample_rate=sample_rate, threshold=threshold)
+                is_empty = check_video_black(video_path, initial_sample_rate=sample_rate, threshold=threshold)
                 if is_empty:
                     print(f"The video {video_path} is empty.")
                     log["processed_files"].append(video_path)
@@ -89,7 +95,7 @@ def main():
     parser = argparse.ArgumentParser(description="Check if CCTV videos in a directory are empty.")
     parser.add_argument('directory', type=str, help='Path to the directory containing CCTV video files')
     parser.add_argument('--delete', action='store_true', help='Delete empty video files after evaluation')
-    parser.add_argument('--sample_rate', type=float, default=0.1, help='Sampling rate for checking frames (default: 0.1)')
+    parser.add_argument('--sample_rate', type=float, default=0.1, help='Initial sampling rate for checking frames (default: 0.1)')
     parser.add_argument('--threshold', type=float, default=0.99, help='Threshold for determining if a video is empty (default: 0.99)')
     args = parser.parse_args()
 
