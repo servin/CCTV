@@ -71,15 +71,15 @@ def process_directory(directory_path, delete_empty=False, sample_rate=0.1, thres
         for file in files:
             if file.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):  # Add other video formats if needed
                 video_path = os.path.join(root, file)
-                if video_path in log["processed_files"]:
+                if video_path in log["processed_files"] or video_path in log["not_deleted"] or video_path in log["deleted"]:
                     print(f"Skipping already processed video: {video_path}")
                     continue
                 
                 print(f"Checking video: {video_path}")
                 is_empty = check_video_black(video_path, initial_sample_rate=sample_rate, threshold=threshold)
+                log["processed_files"].append(video_path)
                 if is_empty:
                     print(f"The video {video_path} is empty.")
-                    log["processed_files"].append(video_path)
                     if delete_empty:
                         os.remove(video_path)
                         log["deleted"].append(video_path)
