@@ -5,6 +5,7 @@ import os
 from tqdm import tqdm
 import json
 import time
+from datetime import datetime
 
 LOG_FILE = "face_detection_log.json"
 
@@ -27,6 +28,9 @@ def detect_faces(frame):
             faces.append((startX, startY, endX, endY))
     return faces
 
+def format_timestamp(ts):
+    return datetime.fromtimestamp(ts).strftime('%H:%M:%S')
+
 def process_video(video_path):
     cap = cv2.VideoCapture(video_path)
     
@@ -40,7 +44,7 @@ def process_video(video_path):
     working_time = 0
     non_working_time = 0
     faces_detected = False
-    start_time = time.time()
+    start_time = None
 
     with tqdm(total=total_frames, desc=f"Processing {video_path}", unit="frame") as pbar:
         while cap.isOpened():
@@ -59,7 +63,7 @@ def process_video(video_path):
                 if faces_detected:
                     end_time = time.time()
                     duration = end_time - start_time
-                    print(f"Face detected from {start_time} to {end_time} duration: {duration}")
+                    print(f"Face detected from {format_timestamp(start_time)} to {format_timestamp(end_time)} duration: {duration:.2f}s")
                 faces_detected = False
 
             frame_count += 1
@@ -68,7 +72,7 @@ def process_video(video_path):
     cap.release()
 
     total_time = working_time + non_working_time
-    print(f"Total time: {total_time}s, Working time: {working_time}s, Non-working time: {non_working_time}s")
+    print(f"Total time: {total_time:.2f}s, Working time: {working_time:.2f}s, Non-working time: {non_working_time:.2f}s")
 
     return {"total_time": total_time, "working_time": working_time, "non_working_time": non_working_time}
 

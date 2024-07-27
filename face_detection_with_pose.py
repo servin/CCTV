@@ -7,7 +7,7 @@ import json
 import time
 from datetime import datetime
 
-LOG_FILE = "face_detection_log.json"
+LOG_FILE = "pose_detection_log.json"
 
 # Load the pre-trained face detection model from OpenCV's DNN module
 face_modelFile = "models/res10_300x300_ssd_iter_140000_fp16.caffemodel"
@@ -81,10 +81,9 @@ def process_video(video_path):
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     frame_count = 0
-    working_time = 0
-    non_working_time = 0
-    faces_detected = False
-    start_time = None
+    pose_durations = {"Sitting": 0, "Standing": 0, "Unknown": 0}
+    current_pose = "Unknown"
+    pose_start_time = time.time()
 
     with tqdm(total=total_frames, desc=f"Processing {video_path}", unit="frame") as pbar:
         while cap.isOpened():
@@ -94,31 +93,28 @@ def process_video(video_path):
 
             faces = detect_faces(frame)
             if faces:
-                working_time += (1 / fps)
-                if not faces_detected:
-                    start_time = time.time()
-                faces_detected = True
-            else:
-                non_working_time += (1 / fps)
-                if faces_detected:
-                    end_time = time.time()
-                    duration = end_time - start_time
-                    print(f"Face detected from {format_timestamp(start_time)} to {format_timestamp(end_time)} duration: {duration:.2f}s")
-                faces_detected = False
+                points = detect_pose(frame)
+                pose = classify_pose(points)
+                print(f"Detected Pose: {pose}")
 
-            points = detect_pose(frame)
-            pose = classify_pose(points)
-            print(f"Detected Pose: {pose}")
+                if pose != current_pose:
+                    pose_duration = time.time() - pose_start_time
+                    pose_durations[current_pose] += pose_duration
+                    current_pose = pose
+                    pose_start_time = time.time()
 
             frame_count += 1
             pbar.update(1)
 
     cap.release()
 
-    total_time = working_time + non_working_time
-    print(f"Total time: {total_time:.2f}s, Working time: {working_time:.2f}s, Non-working time: {non_working_time:.2f}s")
+    if pose_start_time is not None:
+        pose_duration = time.time() - pose_start_time
+        pose_durations[current_pose] += pose_duration
 
-    return {"total_time": total_time, "working_time": working_time, "non_working_time": non_working_time}
+    print(f"Pose durations: {pose_durations}")
+
+    return pose_durations
 
 def save_progress(log):
     with open(LOG_FILE, 'w') as f:
@@ -128,7 +124,7 @@ def load_progress():
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, 'r') as f:
             return json.load(f)
-    return {"processed_files": []}
+    return {"processed_files": [], "pose_durations": {}}
 
 def process_directory(directory_path):
     log = load_progress()
@@ -141,9 +137,9 @@ def process_directory(directory_path):
                     continue
 
                 print(f"Checking video: {video_path}")
-                result = process_video(video_path)
+                pose_durations = process_video(video_path)
                 log["processed_files"].append(video_path)
-                log[video_path] = result
+                log["pose_durations"][video_path] = pose_durations
                 save_progress(log)
 
 def main():
